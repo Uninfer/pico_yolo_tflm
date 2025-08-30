@@ -6,6 +6,7 @@
 #include "hardware/clocks.h"
 #include "hardware/timer.h"
 #include "hardware/spi.h"
+#include "config.h"
 
 // LCD configuration
 // static const struct st7789_config lcd_config = {
@@ -18,7 +19,6 @@
 //     .gpio_bl = LCD_BL,
 // };
 
-#include "GUI_Paint.h"
 #include "LCD_2in.h"
 
 extern uint16_t *image_buffer;
@@ -32,17 +32,7 @@ void lcd_init(void)
     /* LCD Init */
     printf("2inch LCD demo...\r\n");
     LCD_2IN_Init(VERTICAL);
-    LCD_2IN_Clear(WHITE);
     DEV_SET_PWM(100);
-
-    /* Create a new image cache named IMAGE_RGB and fill it with white */
-    Paint_NewImage((UBYTE *)image_buffer, LCD_2IN.WIDTH, LCD_2IN.HEIGHT, 0, WHITE);
-    Paint_SetScale(65);
-    Paint_Clear(WHITE);
-    sleep_ms(10);
-//     st7789_init(&lcd_config, 320, 240); // 初始化 LCD
-//     st7789_dma_init();
-//     st7789_fill(0x0000);                // 清屏
 }
 
 /**
@@ -76,14 +66,14 @@ void draw_boxes_to_lcd(int x1, int y1, int x2, int y2, uint16_t color)
     // if (x1 < 0) {
     //     x1 = 0;
     // }
-    // if (x2 >= FRAME_WIDTH) {
-    //     x2 = FRAME_WIDTH - 1;
+    // if (x2 >= CONFIG_LCD_WIDTH) {
+    //     x2 = CONFIG_LCD_WIDTH - 1;
     // }
     // if (y1 < 0) {
     //     y1 = 0;
     // }
-    // if (y2 >= FRAME_HEIGHT) {
-    //     y2 = FRAME_HEIGHT - 1;
+    // if (y2 >= CONFIG_LCD_HEIGHT) {
+    //     y2 = CONFIG_LCD_HEIGHT - 1;
     // }
     // // // 上边框
     // // st7789_set_cursor(x1, y1);

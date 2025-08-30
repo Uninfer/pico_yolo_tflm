@@ -45,7 +45,6 @@ add_executable(pico_yolo
         pico_yolo/utils.cc
         main/main.c
         main/DEV_Config.c
-        main/GUI_Paint.c
         st7789/LCD_2in.c
         st7789/lcd.c
         ov7670/ov5640.c

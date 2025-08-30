@@ -3,7 +3,7 @@
 * | Author      :   Waveshare team
 * | Function    :   Hardware underlying interface
 * | Info        :
-*                Used to shield the underlying layers of each master 
+*                Used to shield the underlying layers of each master
 *                and enhance portability
 *----------------
 * |	This version:   V1.0
@@ -26,7 +26,7 @@
 #define HORIZONTAL 0
 #define VERTICAL   1
 
-#define LCD_2IN_SetBacklight(Value) ; 
+#define LCD_2IN_SetBacklight(Value) ;
 
 typedef struct{
     UWORD WIDTH;
@@ -36,7 +36,7 @@ typedef struct{
 extern LCD_2IN_ATTRIBUTES LCD_2IN;
 
 /********************************************************************************
-function:	
+function:
 			Macro definition variable name
 ********************************************************************************/
 void LCD_2IN_Init(UBYTE Scan_dir);

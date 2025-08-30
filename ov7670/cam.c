@@ -60,10 +60,7 @@ void init_cam()
     sccb_init(I2C1_SDA, I2C1_SCL); // sda,scl=(gp26,gp27). see 'sccb_if.c' and 'cam.h'
     sleep_ms(50);
 
-    // buffer of camera data is LCD_2IN_WIDTH * LCD_2IN_HEIGHT * 2 bytes (RGB565 = 16 bits = 2 bytes)
     cam_ptr = image_buffer;
-    // cam_ptr = (uint8_t *)malloc(CAM_FUL_SIZE * 2);
-    // memset(cam_ptr, 0, CAM_FUL_SIZE * 2);
 }
 
 /********************************************************************************

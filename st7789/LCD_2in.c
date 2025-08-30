@@ -80,35 +80,35 @@ parameter:
 ******************************************************************************/
 static void LCD_2IN_InitReg(void)
 {
-    LCD_2IN_SendCommand(0x3A);     
+    LCD_2IN_SendCommand(0x3A);
     LCD_2IN_SendData_8Bit(0x05);   //LCD_2IN_SendData_8Bit(0x66);
 
     LCD_2IN_SendCommand(0xF0);     // Command Set Control
-    LCD_2IN_SendData_8Bit(0xC3);   
+    LCD_2IN_SendData_8Bit(0xC3);
 
-    LCD_2IN_SendCommand(0xF0);     
-    LCD_2IN_SendData_8Bit(0x96);   
+    LCD_2IN_SendCommand(0xF0);
+    LCD_2IN_SendData_8Bit(0x96);
 
-    LCD_2IN_SendCommand(0xB4);     
-    LCD_2IN_SendData_8Bit(0x01);   
+    LCD_2IN_SendCommand(0xB4);
+    LCD_2IN_SendData_8Bit(0x01);
 
-    LCD_2IN_SendCommand(0xB7);     
-    LCD_2IN_SendData_8Bit(0xC6);   
+    LCD_2IN_SendCommand(0xB7);
+    LCD_2IN_SendData_8Bit(0xC6);
 
-    LCD_2IN_SendCommand(0xC0);     
-    LCD_2IN_SendData_8Bit(0x80);   
-    LCD_2IN_SendData_8Bit(0x45);   
+    LCD_2IN_SendCommand(0xC0);
+    LCD_2IN_SendData_8Bit(0x80);
+    LCD_2IN_SendData_8Bit(0x45);
 
-    LCD_2IN_SendCommand(0xC1);     
+    LCD_2IN_SendCommand(0xC1);
     LCD_2IN_SendData_8Bit(0x13);   //18  //00
 
-    LCD_2IN_SendCommand(0xC2);     
-    LCD_2IN_SendData_8Bit(0xA7);   
+    LCD_2IN_SendCommand(0xC2);
+    LCD_2IN_SendData_8Bit(0xA7);
 
-    LCD_2IN_SendCommand(0xC5);     
-    LCD_2IN_SendData_8Bit(0x0A);   
+    LCD_2IN_SendCommand(0xC5);
+    LCD_2IN_SendData_8Bit(0x0A);
 
-    LCD_2IN_SendCommand(0xE8);     
+    LCD_2IN_SendCommand(0xE8);
     LCD_2IN_SendData_8Bit(0x40);
     LCD_2IN_SendData_8Bit(0x8A);
     LCD_2IN_SendData_8Bit(0x00);
@@ -150,17 +150,17 @@ static void LCD_2IN_InitReg(void)
     LCD_2IN_SendData_8Bit(0x2C);
     LCD_2IN_SendData_8Bit(0x32);
 
-    LCD_2IN_SendCommand(0xF0);     
-    LCD_2IN_SendData_8Bit(0x3C);   
+    LCD_2IN_SendCommand(0xF0);
+    LCD_2IN_SendData_8Bit(0x3C);
 
-    LCD_2IN_SendCommand(0xF0);     
-    LCD_2IN_SendData_8Bit(0x69);   
+    LCD_2IN_SendCommand(0xF0);
+    LCD_2IN_SendData_8Bit(0x69);
 
-    DEV_Delay_ms(120);                
+    DEV_Delay_ms(120);
 
-    LCD_2IN_SendCommand(0x21);     
-	
-    LCD_2IN_SendCommand(0x29); 
+    LCD_2IN_SendCommand(0x21);
+
+    LCD_2IN_SendCommand(0x29);
 }
 
 /********************************************************************************
@@ -174,20 +174,26 @@ static void LCD_2IN_SetAttributes(UBYTE Scan_dir)
     LCD_2IN.SCAN_DIR = Scan_dir;
     UBYTE MemoryAccessReg = 0x00;
 
+    /*
+bit7 = MY：行方向翻转
+bit6 = MX：列方向翻转
+bit5 = MV：行列交换（横屏/竖屏）
+bit3 = BGR：颜色顺序 (RGB/BGR)
+    */
     //Get GRAM and LCD width and height
     if(Scan_dir == HORIZONTAL) {
         LCD_2IN.HEIGHT	= LCD_2IN_WIDTH;
         LCD_2IN.WIDTH   = LCD_2IN_HEIGHT;
         MemoryAccessReg = 0XA8;
     } else {
-        LCD_2IN.HEIGHT	= LCD_2IN_HEIGHT;       
+        LCD_2IN.HEIGHT	= LCD_2IN_HEIGHT;
         LCD_2IN.WIDTH   = LCD_2IN_WIDTH;
         MemoryAccessReg = 0X08;
     }
 
     // Set the read / write scan direction of the frame memory
-    LCD_2IN_SendCommand(0x11); 
-    sleep_ms(120); 
+    LCD_2IN_SendCommand(0x11);
+    sleep_ms(120);
     LCD_2IN_SendCommand(0x36); //MX, MY, RGB mode
     LCD_2IN_SendData_8Bit(MemoryAccessReg);	//0x08 set RGB
 }
@@ -203,7 +209,7 @@ void LCD_2IN_Init(UBYTE Scan_dir)
 
     //Set the resolution and scanning method of the screen
     LCD_2IN_SetAttributes(Scan_dir);
-    
+
     //Set the initialization register
     LCD_2IN_InitReg();
 }
@@ -299,7 +305,7 @@ void LCD_2IN_DisplayPoint(UWORD X, UWORD Y, UWORD Color)
 void  Handler_2IN_LCD(int signo)
 {
     //System Exit
-    printf("\r\nHandler:Program stop\r\n");     
+    printf("\r\nHandler:Program stop\r\n");
     DEV_Module_Exit();
 	exit(0);
 }

@@ -184,7 +184,7 @@ void pico_yolo_infer(const uint16_t *RGB565_input, BBox *boxes, int *box_count)
     // 预处理计时
     uint64_t start_time_pre = time_us_64();
     // Step1: 预处理: 执行 resize + RGB888转换 + pre_process
-    pre_process(RGB565_input, 320, 240, input->data.int8, 192, 192);
+    pre_process(RGB565_input, 240, 320, input->data.int8, 192, 192);
 
     uint64_t end_time_pre = time_us_64();
     uint64_t pre_process_time_us = end_time_pre - start_time_pre;

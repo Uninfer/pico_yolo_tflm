@@ -116,13 +116,13 @@ void core1_entry()
         mutex_enter_blocking(&g_box_lock);
         share_box_count = box_count_cache;
         if (share_box_count > 0) {
+            printf(__FILE__ ":%d\n", __LINE__);
             memcpy(share_boxes, boxes_cache, share_box_count * sizeof(BBox));
         }
         mutex_exit(&g_box_lock);
     }
 }
 
-#include "GUI_Paint.h"
 #include "LCD_2in.h"
 #include "DEV_Config.h"
 #include "cam.h"
@@ -184,8 +184,8 @@ int main(void)
     while (buffer_ready == false) { // 等待 DMA 完成
         ;
     }
-    camera_swap_bytes();
-    mutex_exit(&g_image_buffer_lock);
+    buffer_ready = false;  // Reset the flag
+    // camera_swap_bytes();
     mutex_exit(&g_image_buffer_lock);
     lcd_show_image(image_buffer);
     draw_box();                                     /* 画框 */
@@ -197,9 +197,44 @@ int main(void)
             ;
         }
         buffer_ready = false;  // Reset the flag
-        camera_swap_bytes();
+
+        for (int i = 0; i < 20; i++) {
+                printf("%d %d %d -", image_buffer[20*240+i*16] >> 11, (image_buffer[20*240+i*16] >> 5) & 0x3F, image_buffer[20*240+i*16] & 0x1F);
+        }
+        printf("%X \n");
+        // camera_swap_bytes();
         mutex_exit(&g_image_buffer_lock);
+        sleep_ms(1);
+        mutex_enter_blocking(&g_image_buffer_lock);
+        camera_swap_bytes();
+
+        // for (int i = 0; i < 20; i++) {
+        //         printf("%d %d %d +", image_buffer[20*240+i*16] >> 11, (image_buffer[20*240+i*16] >> 5) & 0x3F, image_buffer[20*240+i*16] & 0x1F);
+        // }
         lcd_show_image(image_buffer);
+        mutex_exit(&g_image_buffer_lock);
+        // draw_boxes_to_lcd(10, 50, 100, 100, colors[1]);
         draw_box();                                     /* 画框 */
+        // for (int w = 0; w < 120; w++) {
+        //     for (int h = 0; h < 160; h++) {
+        //         image_buffer[h*240+w] = WHITE;
+        //     }
+        // }
+        // for (int w = 120; w < 240; w++) {
+        //     for (int h = 0; h < 160; h++) {
+        //         image_buffer[h*240+w] = BLACK;
+        //     }
+        // }
+        // for (int w = 0; w < 120; w++) {
+        //     for (int h = 160; h < 320; h++) {
+        //         image_buffer[h*240+w] = BLUE;
+        //     }
+        // }
+        // for (int w = 120; w < 240; w++) {
+        //     for (int h = 160; h < 320; h++) {
+        //         image_buffer[h*240+w] = GRAY;
+        //     }
+        // }
+        // lcd_show_image(image_buffer);
     }
 }
