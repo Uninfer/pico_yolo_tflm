@@ -37,8 +37,6 @@
 #include "hardware/clocks.h"
 #include "pico/binary_info.h"
 #include "ov5640.h"
-#include "DEV_Config.h"
-#include "LCD_2in.h"
 #include "picampinos.pio.h"
 
 extern uint16_t *cam_ptr;
@@ -55,9 +53,11 @@ extern volatile bool buffer_ready;
 #define I2C1_SDA (22)
 #define I2C1_SCL (23)
 
+#define CAM_HEIGHT 320
+#define CAM_WIDTH 240
 // camera buffer size
 // 240x320, RGB565 picture needs 240x320x2 bytes of buffers.
-#define CAM_FUL_SIZE (LCD_2IN_HEIGHT * LCD_2IN_WIDTH)
+#define CAM_FUL_SIZE (CAM_HEIGHT * CAM_WIDTH)
 
 // high layer APIs
 void init_cam();

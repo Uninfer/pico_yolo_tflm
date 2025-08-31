@@ -20,9 +20,10 @@
 
 #include "pico/multicore.h" // 多核
 #include "pico/sync.h"
+#include "cam.h"
 
-#define FRAME_WIDTH 320
-#define FRAME_HEIGHT 240
+#define FRAME_WIDTH 240
+#define FRAME_HEIGHT 320
 
 #define WHITE          0xFFFF
 #define BLACK          0x0000
@@ -123,118 +124,50 @@ void core1_entry()
     }
 }
 
-#include "LCD_2in.h"
-#include "DEV_Config.h"
-#include "cam.h"
 
 int main(void)
 {
-//     set_sys_clock_khz(300000, true);
-//     vreg_set_voltage(VREG_VOLTAGE_MAX);
-//     stdio_init_all();
-//     mutex_init(&g_image_buffer_lock);                       //  初始化锁
-//     mutex_init(&g_box_lock);                                //  初始化锁
-//     printf("System clock set to %lu Hz\r\n", clock_get_hz(clk_sys));
-
-//     pico_yolo_init();                                       // 初始化推理模型
-//     lcd_init();                                             // 初始化 LCD
-//     camera_init();                                          // 初始化摄像头
-//     multicore_launch_core1(core1_entry);                    // 启动从核
-//     while (true) {
-//         /*************************** 获取 一帧数据  ***************************/
-//         mutex_enter_blocking(&g_image_buffer_lock);
-//         camera_fill_frame();
-//         // draw_box();                                         /* 画框 */
-//         camera_wait_for_dma_ok();
-//         camera_swap_bytes();
-//         mutex_exit(&g_image_buffer_lock);
-
-//         /**************************** LCD显示图片 ****************************/
-// #ifdef CONFIG_LCD_USE_DMA
-//         lcd_show_image_dma(image_buffer);
-// #else
-//         lcd_show_image(image_buffer);
-// #endif
-//         draw_box();                                         /* 画框 */
-//     }
-//     return 0;
-    if(DEV_Module_Init()!=0){
-        return -1;
-    }
-    DEV_SET_PWM(0);
-    // image_buffer = (uint16_t *)(frame_ov7670 + DUMMY_BYTE); // RGB565 uint16数组
-    UDOUBLE Imagesize = LCD_2IN_HEIGHT*LCD_2IN_WIDTH*2;
-    if((image_buffer = (UWORD *)malloc(Imagesize)) == NULL) {
-        printf("Failed to apply for black memory...\r\n");
-        exit(0);
-    }
-
+    set_sys_clock_khz(300000, true);
+    vreg_set_voltage(VREG_VOLTAGE_MAX);
+    clock_configure(
+        clk_peri,
+        0,
+        CLOCKS_CLK_PERI_CTRL_AUXSRC_VALUE_CLKSRC_PLL_SYS,
+        300 * 1000 * 1000,
+        300 * 1000 * 1000
+    );
+    stdio_init_all();
+    sleep_ms(10);
     mutex_init(&g_image_buffer_lock);                       //  初始化锁
     mutex_init(&g_box_lock);                                //  初始化锁
     printf("System clock set to %lu Hz\r\n", clock_get_hz(clk_sys));
-
+    image_buffer = (uint16_t *)(frame_ov7670 + DUMMY_BYTE); // RGB565 uint16数组
     pico_yolo_init();                                       // 初始化推理模型
-    lcd_init();
+    lcd_init();                                             // 初始化 LCD
+    camera_init();                                          // 初始化摄像头
     multicore_launch_core1(core1_entry);                    // 启动从核
-
-
-    // TODO 第一帧比较特殊, 后面修改
-    mutex_enter_blocking(&g_image_buffer_lock);
-    camera_init();
-    while (buffer_ready == false) { // 等待 DMA 完成
-        ;
-    }
-    buffer_ready = false;  // Reset the flag
-    // camera_swap_bytes();
-    mutex_exit(&g_image_buffer_lock);
-    lcd_show_image(image_buffer);
-    draw_box();                                     /* 画框 */
-
-    while(1) {
+    while (true) {
+        /*************************** 获取 一帧数据  ***************************/
         mutex_enter_blocking(&g_image_buffer_lock);
+        // camera_fill_frame();
+        // camera_wait_for_dma_ok();
+
         camera_fill_frame();
         while (buffer_ready == false) { // 等待 DMA 完成
             ;
         }
+
         buffer_ready = false;  // Reset the flag
-
-        for (int i = 0; i < 20; i++) {
-                printf("%d %d %d -", image_buffer[20*240+i*16] >> 11, (image_buffer[20*240+i*16] >> 5) & 0x3F, image_buffer[20*240+i*16] & 0x1F);
-        }
-        printf("%X \n");
-        // camera_swap_bytes();
         mutex_exit(&g_image_buffer_lock);
-        sleep_ms(1);
-        mutex_enter_blocking(&g_image_buffer_lock);
-        camera_swap_bytes();
 
-        // for (int i = 0; i < 20; i++) {
-        //         printf("%d %d %d +", image_buffer[20*240+i*16] >> 11, (image_buffer[20*240+i*16] >> 5) & 0x3F, image_buffer[20*240+i*16] & 0x1F);
-        // }
+        /**************************** LCD显示图片 ****************************/
+#ifdef CONFIG_LCD_USE_DMA
+        lcd_show_image_dma(image_buffer);
+#else
         lcd_show_image(image_buffer);
-        mutex_exit(&g_image_buffer_lock);
-        // draw_boxes_to_lcd(10, 50, 100, 100, colors[1]);
-        draw_box();                                     /* 画框 */
-        // for (int w = 0; w < 120; w++) {
-        //     for (int h = 0; h < 160; h++) {
-        //         image_buffer[h*240+w] = WHITE;
-        //     }
-        // }
-        // for (int w = 120; w < 240; w++) {
-        //     for (int h = 0; h < 160; h++) {
-        //         image_buffer[h*240+w] = BLACK;
-        //     }
-        // }
-        // for (int w = 0; w < 120; w++) {
-        //     for (int h = 160; h < 320; h++) {
-        //         image_buffer[h*240+w] = BLUE;
-        //     }
-        // }
-        // for (int w = 120; w < 240; w++) {
-        //     for (int h = 160; h < 320; h++) {
-        //         image_buffer[h*240+w] = GRAY;
-        //     }
-        // }
-        // lcd_show_image(image_buffer);
+#endif
+        draw_box();                                         /* 画框 */
+        // draw_boxes_to_lcd(10, 50, 100, 100, colors[1]);     // test
     }
+    return 0;
 }
