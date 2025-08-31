@@ -55,7 +55,7 @@ parameter:
 void init_cam()
 {
     // Initialize CAMERA
-    set_pwm_freq_kHz(37000, PIN_PWM);
+    set_pwm_freq_kHz(24000, PIN_PWM);
     sleep_ms(50);
     sccb_init(I2C1_SDA, I2C1_SCL); // sda,scl=(gp26,gp27). see 'sccb_if.c' and 'cam.h'
     sleep_ms(50);

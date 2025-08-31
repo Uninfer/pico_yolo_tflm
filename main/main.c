@@ -141,7 +141,7 @@ int main(void)
     mutex_init(&g_image_buffer_lock);                       //  初始化锁
     mutex_init(&g_box_lock);                                //  初始化锁
     printf("System clock set to %lu Hz\r\n", clock_get_hz(clk_sys));
-    image_buffer = (uint16_t *)(frame_ov7670 + DUMMY_BYTE); // RGB565 uint16数组
+    image_buffer = (uint16_t *)(frame_ov7670); // RGB565 uint16数组
     pico_yolo_init();                                       // 初始化推理模型
     lcd_init();                                             // 初始化 LCD
     camera_init();                                          // 初始化摄像头
@@ -152,10 +152,10 @@ int main(void)
         // camera_fill_frame();
         // camera_wait_for_dma_ok();
 
-        camera_fill_frame();
         while (buffer_ready == false) { // 等待 DMA 完成
             ;
         }
+        camera_fill_frame();
 
         buffer_ready = false;  // Reset the flag
         mutex_exit(&g_image_buffer_lock);

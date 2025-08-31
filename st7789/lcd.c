@@ -51,8 +51,8 @@ void lcd_wait_for_dma_ok(void)
 }
 
 extern uint16_t *image_buffer;
-#define FRAME_WIDTH 320
-#define FRAME_HEIGHT 240
+#define FRAME_WIDTH 240
+#define FRAME_HEIGHT 320
 void draw_boxes_to_lcd(int x1, int y1, int x2, int y2, uint16_t color)
 {
     /* 限制范围 */
