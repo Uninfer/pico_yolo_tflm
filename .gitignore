@@ -1,2 +1,12 @@
-build
-!.vscode/*
+/build/
+/cmake-build-*/
+/out/
+*.uf2
+*.elf
+*.bin
+*.hex
+*.map
+compile_commands.json
+.cache/
+.vscode/*
+!.vscode/settings.json
