@@ -1,6 +1,6 @@
 # 硬件说明
 
-RP2350、OV5640 DVP 摄像头和 240×320 ST7789 SPI 屏幕。TFLM 固定使用 Waveshare RP2350-Touch-LCD-2-C 板型；Uninfer 默认使用 Pico 2 W 板型，两工程的外设引脚相同。
+RP2350、OV5640 DVP 摄像头和 240×320 ST7789 SPI 屏幕。本项目固定使用 Waveshare RP2350-Touch-LCD-2-C 板型，外设引脚如下。
 
 | GPIO | 信号 |
 | --- | --- |
