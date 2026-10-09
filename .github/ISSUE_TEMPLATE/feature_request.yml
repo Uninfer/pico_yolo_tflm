@@ -1,0 +1,17 @@
+name: Feature request
+description: 提出硬件支持、推理或开发流程改进
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: 要解决的问题
+      description: 描述使用场景和当前限制。
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: 建议方案
+      description: 说明方案、替代选择，以及预计的 RAM、Flash 或性能影响。
+    validations:
+      required: true

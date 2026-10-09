@@ -83,8 +83,9 @@ const uint16_t sensor_default_regs[][2] = {
     {0x3a13, 0x43},
     {0x3a14, 0x03},
     {0x3a15, 0xd8},
-    {0x3a18, 0x00},//gainceiling
-    {0x3a19, 0xf8},//gainceiling
+    /* 限制自动增益为 6 倍；暗光优先延长曝光，减少噪声放大。 */
+    {0x3a18, 0x00},
+    {0x3a19, 0x60},
     {0x3a1b, 0x30},//ae_level
     {0x3a1e, 0x26},//ae_level
     {0x3a1f, 0x14},//ae_level
@@ -156,19 +157,20 @@ const uint16_t sensor_default_regs[][2] = {
     {0x538a, 0x01},
     {0x538b, 0x98},
 
-    //CIP control (Sharpness)
-    {0x5300, 0x10},//sharpness
-    {0x5301, 0x10},//sharpness
-    {0x5302, 0x18},//sharpness
-    {0x5303, 0x19},//sharpness
-    {0x5304, 0x10},
-    {0x5305, 0x10},
-    {0x5306, 0x08},//denoise
+    /* 0x5308[4] 启用手动降噪，0x5306=16 对应 Espressif 的 5/8 档。
+       适度降低手动锐化，避免把暗处颗粒作为边缘放大。 */
+    {0x5300, 0x08},
+    {0x5301, 0x30},
+    {0x5302, 0x08},
+    {0x5303, 0x00},
+    {0x5304, 0x08},
+    {0x5305, 0x30},
+    {0x5306, 0x10},
     {0x5307, 0x16},
-    {0x5308, 0x40},
+    {0x5308, 0x50},
     {0x5309, 0x10},//sharpness
     {0x530a, 0x10},//sharpness
-    {0x530b, 0x04},//sharpness
+    {0x530b, 0x02},//sharpness
     {0x530c, 0x06},//sharpness
 
     //GAMMA
@@ -249,17 +251,10 @@ void ov5640_sensor_init(const uint32_t sda_pin, const uint32_t scl_pin)
     // set_size_and_colorspace 320x240
     OV5640_WR_Reg_2(i2c,CAM_ADDR,X_ADDR_ST_H,352,26);
     OV5640_WR_Reg_2(i2c,CAM_ADDR,X_ADDR_END_H,1792,1946);
-    OV5640_WR_Reg_2(i2c,CAM_ADDR,X_OUTPUT_SIZE_H,240,320); //1440 1920
-    // Use the reference project's binned 240x320 preview timing. The old
-    // full-sensor blanking interval limited the frame cadence unnecessarily.
+    OV5640_WR_Reg_2(i2c,CAM_ADDR,X_OUTPUT_SIZE_H,240,320); //1440x1920 crop
+    /* Preview timing: remove the oversized 5 MP blanking interval. */
     OV5640_WR_Reg_2(i2c,CAM_ADDR,X_TOTAL_SIZE_H,1896,984);
     OV5640_WR_Reg_2(i2c,CAM_ADDR,X_OFFSET_H,16,14);
-
-    // OV5640_WR_Reg_2(i2c,CAM_ADDR,X_ADDR_ST_H,26,352);
-    // OV5640_WR_Reg_2(i2c,CAM_ADDR,X_ADDR_END_H,1946,1792);
-    // OV5640_WR_Reg_2(i2c,CAM_ADDR,X_OUTPUT_SIZE_H,320,240); //1920 1440
-    // OV5640_WR_Reg_2(i2c,CAM_ADDR,X_TOTAL_SIZE_H,2592,1944);
-    // OV5640_WR_Reg_2(i2c,CAM_ADDR,X_OFFSET_H,16,14);
 
     uint8_t dat;
     dat = OV5640_RD_Reg(i2c,CAM_ADDR,0x5001) | 0x20;
@@ -267,8 +262,10 @@ void ov5640_sensor_init(const uint32_t sda_pin, const uint32_t scl_pin)
     sleep_ms(50);
 
     // set_image_options
+    /* Low-resolution preview binning.  Preserve the existing non-mirrored
+       orientation (mirror/flip bits remain clear). */
     OV5640_WR_Reg(i2c,CAM_ADDR,TIMING_TC_REG20, 0x41);
-    OV5640_WR_Reg(i2c,CAM_ADDR,TIMING_TC_REG21, 0X01);
+    OV5640_WR_Reg(i2c,CAM_ADDR,TIMING_TC_REG21, 0x01);
     OV5640_WR_Reg(i2c,CAM_ADDR,0x4514, 0xAA);
     OV5640_WR_Reg(i2c,CAM_ADDR,0x4520, 0x0B);
     OV5640_WR_Reg(i2c,CAM_ADDR,X_INCREMENT, 0x31);
@@ -279,7 +276,8 @@ void ov5640_sensor_init(const uint32_t sda_pin, const uint32_t scl_pin)
     OV5640_WR_Reg(i2c,CAM_ADDR,SC_PLL_CONTRL_5, 0x00);
     OV5640_WR_Reg(i2c,CAM_ADDR,SC_PLL_CONTRL_0, 0x1A);
     OV5640_WR_Reg(i2c,CAM_ADDR,SC_PLL_CONTRL_1, 0x11);
-    OV5640_WR_Reg(i2c,CAM_ADDR,SC_PLL_CONTRL_2, 11 & 0xFF);
+    /* 加快相机输出时钟，保持图像尺寸、裁剪和颜色格式不变。 */
+    OV5640_WR_Reg(i2c,CAM_ADDR,SC_PLL_CONTRL_2, 22);
     OV5640_WR_Reg(i2c,CAM_ADDR,SC_PLL_CONTRL_3, 0x01);
     OV5640_WR_Reg(i2c,CAM_ADDR,SYSTEM_ROOT_DIVIDER, 0x16);
     OV5640_WR_Reg(i2c,CAM_ADDR,PCLK_RATIO, 0x04);
@@ -364,4 +362,5 @@ uint8_t OV5640_WR_Reg_2(i2c_inst_t *i2c,
     msg[1] = reg & 0xFF;
     msg[2] = data2 & 0xFF;
     ret=i2c_write_blocking(i2c, addr, msg, 3, false);
+    return ret;
 }

@@ -4,6 +4,9 @@ set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
+    set(CMAKE_BUILD_TYPE Release CACHE STRING "Build type" FORCE)
+endif()
 
 # Default performance clock; use 150000 kHz for the RP2350 baseline.
 set(PICO_YOLO_SYS_CLOCK_KHZ "300000" CACHE STRING "RP2350 system/peripheral clock in kHz")
@@ -16,7 +19,7 @@ set(PICO_BOARD_HEADER_DIRS
     "${CMAKE_CURRENT_LIST_DIR}/boards/include/boards"
     CACHE STRING "Project board definitions" FORCE)
 
-include(pico_sdk_import.cmake)
+include(cmake/pico_sdk_import.cmake)
 
 project(pico_yolo_rp2350 C CXX ASM)
 pico_sdk_init()
@@ -64,13 +67,12 @@ target_link_libraries(display_st7789 PUBLIC
 )
 
 add_library(yolo_inference STATIC
-    src/inference/yolo/main_functions.cc
-    src/inference/yolo/utils.cc
+    src/inference/pico_yolo/main_functions.cc
     src/inference/models/fire/Fire_int8_weight.cc
 )
 target_include_directories(yolo_inference PUBLIC
     "${PROJECT_INFERENCE_DIR}"
-    "${PROJECT_INFERENCE_DIR}/yolo"
+    "${PROJECT_INFERENCE_DIR}/pico_yolo"
     "${PROJECT_BOARD_INCLUDE_DIR}"
 )
 target_link_libraries(yolo_inference PUBLIC
@@ -102,6 +104,9 @@ target_link_libraries(pico_yolo_rp2350 PRIVATE
 )
 target_compile_definitions(pico_yolo_rp2350 PRIVATE
     PICO_YOLO_SYS_CLOCK_KHZ=${PICO_YOLO_SYS_CLOCK_KHZ}
+    PICO_YOLO_FRAME_BUFFER_COUNT=1
+    PICO_CORE1_STACK_SIZE=4096
+    PICO_STACK_SIZE=4096
 )
 
 pico_enable_stdio_usb(pico_yolo_rp2350 1)

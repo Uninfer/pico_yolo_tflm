@@ -8,6 +8,7 @@ void camera_capture_init(uint16_t *framebuffer);
 void camera_capture_configure_dma(void);
 void camera_capture_start_pio(void);
 void camera_capture_next_frame(void);
+void camera_capture_to(uint16_t *framebuffer);
 void camera_capture_deinit(void);
 bool camera_capture_frame_ready(void);
 void camera_capture_ack_frame(void);

@@ -1,28 +1,45 @@
 # pico_yolo_rp2350
 
-在 Waveshare [RP2350-Touch-LCD-2-C](https://www.waveshare.net/shop/RP2350-Touch-LCD-2-C.htm) 上运行的 YOLO 固件：OV5640 摄像头采集、ST7789 屏幕预览，以及基于 TFLite Micro 的目标检测。
+在 RP2350 上运行火焰/烟雾 YOLO 检测，使用 **标准 TensorFlow Lite Micro + CMSIS-NN**、OV5640 摄像头和 ST7789 屏幕。输入画面为 240×320 RGB565，模型输入为 192×192 RGB INT8。
 
-本项目固定适配该板卡和附带的 OV5640 摄像头，不需要在构建命令中选择板型。固件默认使用 300 MHz 系统时钟提升推理速度；这是高于 150 MHz 基准频率的超频设置，可通过 CMake 参数切回基准频率。
+固定适配 Waveshare RP2350-Touch-LCD-2-C 摄像头套装。 双核运行：Core 0 采集与显示，Core 1 推理。当前采用单帧 RGB565 缓冲，标准 TFLM 张量工作区预留 248 KiB。
 
-## 构建与烧录
+## 编译与烧录
 
-安装 Pico SDK 2.1.1、CMake、Ninja 和 Arm GNU Toolchain，并设置 `PICO_SDK_PATH`：
+需要 Pico SDK **2.1.1**（含子模块）、Arm GNU Toolchain、CMake **3.20+** 和 Ninja。设置 SDK 路径并确保 `arm-none-eabi-gcc` 在 PATH 中：
 
 ```sh
 export PICO_SDK_PATH=/path/to/pico-sdk
-cmake -S . -B build -G Ninja
-cmake --build build
+cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+cmake --build build --parallel
 ```
 
-生成文件为 `build/pico_yolo_rp2350.uf2`。按住板上的 BOOT 键连接 USB，出现 RP2350 启动盘后，将 UF2 复制进去。完整步骤见[构建与烧录](docs/build-and-flash.md)。
+也可运行 `./scripts/build.sh`。生成文件为 `build/pico_yolo_rp2350.uf2`。
 
-## 项目说明
+按住 BOOT/BOOTSEL 键连接 USB，把 UF2 复制到 RP2350 启动盘。Windows 可运行 `./scripts/flash.ps1`。启动后打开 USB 串口查看日志，串口工具可设置 115200。
 
-- [硬件与引脚](docs/hardware.md)：本项目使用的摄像头、屏幕和 GPIO。
-- [运行架构](docs/architecture.md)：相机帧、双核推理与显示流程。
-- [性能说明](docs/performance.md)：帧调度、推理统计和时钟设置。
-- [模型说明](docs/model.md)：输入输出、类别及模型许可状态。
-- [故障排查](docs/troubleshooting.md)：构建、烧录、摄像头、屏幕和推理问题。
-- [贡献指南](CONTRIBUTING.md)
+默认系统/外设时钟为 **300 MHz**，属于超频；改用 150 MHz 时，在配置命令中加入 `-DPICO_YOLO_SYS_CLOCK_KHZ=150000`。以下性能只对应 300 MHz 配置。
 
-项目自有代码和文档采用 Apache-2.0。当前模型权重和示例帧的来源及再分发许可尚未确认，不属于项目 Apache-2.0 授权范围；对外发布固件前请先核实，详情见 [模型说明](docs/model.md) 和[第三方许可清单](THIRD_PARTY_NOTICES.md)。
+## 目录与说明
+
+```text
+src/
+  app/                       应用入口与双核调度
+  drivers/camera/ov5640/      摄像头、PIO 与 DMA
+  drivers/display/st7789/    屏幕驱动
+  inference/pico_yolo/       引擎适配、预处理与后处理
+  inference/models/fire/     部署模型
+boards/                      板级引脚与 Pico SDK 板型
+third_party/                 引擎/Arm 依赖及其许可证
+cmake/                       Pico SDK 导入
+scripts/                     编译与烧录
+```
+
+- [架构说明](docs/architecture.md)：模块职责、帧流程、模型接口与当前性能。
+- [硬件说明](docs/hardware.md)：引脚、相机参数和常见故障。
+- [贡献指南](CONTRIBUTING.md)：提交 Issue/PR 和验证方式。
+- [第三方声明](THIRD_PARTY_NOTICES.md)：依赖来源与模型授权边界。
+
+## 开源许可
+
+项目自有代码与文档采用 [Apache-2.0](LICENSE)，适用范围见 [NOTICE](NOTICE)。第三方文件保留原许可；模型权重及示例图像的授权状态单独记录在 [第三方声明](THIRD_PARTY_NOTICES.md)。

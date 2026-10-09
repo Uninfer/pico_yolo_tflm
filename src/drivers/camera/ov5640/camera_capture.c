@@ -143,8 +143,9 @@ static void camera_capture_dma_irq(void)
 
 }
 
-void camera_capture_next_frame(void)
+void camera_capture_to(uint16_t *framebuffer)
 {
+    cam_ptr = framebuffer;
     const uint32_t transfer_count = BOARD_LCD_WIDTH * BOARD_LCD_HEIGHT;
     const uint32_t channel_mask = 1u << DMA_CAM_RD_CH;
 
@@ -226,4 +227,9 @@ static void set_pwm_freq_kHz(uint32_t freq_khz, uint8_t gpio_num)
     // set PWM start
     pwm_init(pwm0_slice_num, &pwm_slice_config, true);
     pwm_set_gpio_level(gpio_num, (pwm_slice_config.top * 0.50)); // duty:50%
+}
+
+void camera_capture_next_frame(void)
+{
+    camera_capture_to(cam_ptr);
 }

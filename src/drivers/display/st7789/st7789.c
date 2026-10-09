@@ -50,33 +50,7 @@ static void st7789_cmd(uint8_t cmd, const uint8_t* data, size_t len)
     sleep_us(1);
 }
 
-// void st7789_caset(uint16_t xs, uint16_t xe)
-// {
-//     uint8_t data[] = {
-//         xs >> 8,
-//         xs & 0xff,
-//         xe >> 8,
-//         xe & 0xff,
-//     };
-
-//     // CASET (2Ah): Column Address Set
-//     st7789_cmd(0x2a, data, sizeof(data));
-// }
-
-// void st7789_raset(uint16_t ys, uint16_t ye)
-// {
-//     uint8_t data[] = {
-//         ys >> 8,
-//         ys & 0xff,
-//         ye >> 8,
-//         ye & 0xff,
-//     };
-
-//     // RASET (2Bh): Row Address Set
-//     st7789_cmd(0x2b, data, sizeof(data));
-// }
-
-void st7789_caset(uint16_t xs, uint16_t xe)
+static void st7789_caset(uint16_t xs, uint16_t xe)
 {
     uint8_t data[] = {
         (uint8_t)(xs >> 8),
@@ -89,7 +63,7 @@ void st7789_caset(uint16_t xs, uint16_t xe)
     st7789_cmd(0x2a, data, sizeof(data));
 }
 
-void st7789_raset(uint16_t ys, uint16_t ye)
+static void st7789_raset(uint16_t ys, uint16_t ye)
 {
     uint8_t data[] = {
         (uint8_t)(ys >> 8),
@@ -109,7 +83,10 @@ void st7789_init(const struct st7789_config* config, uint16_t width, uint16_t he
     st7789_width = width;
     st7789_height = height;
 
-    spi_init(st7789_cfg.spi, 125 * 1000 * 1000);
+    /* Match the known-good reference project request. At a 300 MHz peri clock
+       the PL022 divider selects the highest rate not exceeding 125 MHz. */
+    const uint32_t spi_baud = spi_init(st7789_cfg.spi, 125 * 1000 * 1000);
+    printf("LCD SPI: %lu Hz\n", (unsigned long)spi_baud);
     if (st7789_cfg.gpio_cs > -1) {
         spi_set_format(st7789_cfg.spi, 8, SPI_CPOL_0, SPI_CPHA_0, SPI_MSB_FIRST);
     } else {
@@ -162,13 +139,11 @@ void st7789_init(const struct st7789_config* config, uint16_t width, uint16_t he
     // - RGB/BGR Order                 = RGB
     // - Display Data Latch Data Order = LCD Refresh Left to Right
 
-    // st7789_cmd(0x36, (uint8_t[]){ 0x00 }, 1);  // 竖屏
-    // st7789_cmd(0x36, (uint8_t[]){ 0x20 }, 1);   // 横屏
     st7789_cmd(0x11, NULL, 0);
-    st7789_cmd(0x36, (uint8_t[]){ 0x40 }, 1);   // 竖屏
+    st7789_cmd(0x36, (uint8_t[]){ 0x40 }, 1);   // 240x320 portrait
 
-    st7789_caset(0, width);
-    st7789_raset(0, height);
+    st7789_caset(0, width - 1U);
+    st7789_raset(0, height - 1U);
 
     // INVON (21h): Display Inversion On
     st7789_cmd(0x21, NULL, 0);
@@ -185,7 +160,7 @@ void st7789_init(const struct st7789_config* config, uint16_t width, uint16_t he
     gpio_put(st7789_cfg.gpio_bl, 1);
 }
 
-void st7789_ramwr()
+static void st7789_ramwr(void)
 {
     sleep_us(1);
     if (st7789_cfg.gpio_cs > -1) {
@@ -221,124 +196,49 @@ void st7789_write(const void* data, size_t len)
     spi_write16_blocking(st7789_cfg.spi, (uint16_t *)data, len / 2);
 }
 
-void st7789_put(uint16_t pixel)
-{
-    st7789_write(&pixel, sizeof(pixel));
-}
-
 void st7789_fill(uint16_t pixel)
 {
-    int num_pixels = st7789_width * st7789_height;
-
-    st7789_set_cursor(0, 0);
-
-    for (int i = 0; i < num_pixels; i++) {
-        st7789_put(pixel);
+    uint16_t row[LCD_WIDTH];
+    uint16_t y;
+    for (y = 0U; y < st7789_width; ++y) row[y] = pixel;
+    st7789_set_cursor(0U, 0U);
+    for (y = 0U; y < st7789_height; ++y) {
+        st7789_write(row, st7789_width * sizeof(row[0]));
     }
 }
 
 void st7789_set_cursor(uint16_t x, uint16_t y)
 {
-    st7789_caset(x, st7789_width - 1);
-    st7789_raset(y, st7789_height - 1);
+    st7789_caset(x, st7789_width - 1U);
+    st7789_raset(y, st7789_height - 1U);
 }
 
-void st7789_vertical_scroll(uint16_t row)
+static void st7789_set_window(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2)
 {
-    uint8_t data[] = {
-        (uint8_t)((row >> 8) & 0xff),
-        (uint8_t)(row & 0x00ff)
-    };
-
-    // VSCSAD (37h): Vertical Scroll Start Address of RAM
-    st7789_cmd(0x37, data, sizeof(data));
-}
-
-#include "hardware/dma.h"
-static int st7789_dma_chan = -1;
-void st7789_dma_init()
-{
-    // 分配一个 DMA 通道
-    st7789_dma_chan = dma_claim_unused_channel(true);
-
-    // 配置 DMA
-    dma_channel_config c = dma_channel_get_default_config(st7789_dma_chan);
-
-    // 16-bit 传输（RGB565）
-    channel_config_set_transfer_data_size(&c, DMA_SIZE_16);
-
-    // 读地址递增（从 framebuffer 顺序读取）
-    channel_config_set_read_increment(&c, true);
-
-    // 写地址固定（始终写到 SPI 数据寄存器）
-    channel_config_set_write_increment(&c, false);
-
-    // 目标是 SPI TX FIFO
-    channel_config_set_dreq(&c, spi_get_dreq(st7789_cfg.spi, true));
-
-    dma_channel_configure(
-        st7789_dma_chan,
-        &c,
-        &spi_get_hw(st7789_cfg.spi)->dr, // 写到 SPI 数据寄存器
-        NULL,                            // 源地址稍后指定
-        0,                               // 传输数量稍后指定
-        false                            // 不立即启动
-    );
-}
-
-static inline void st7789_set_mode_16bit() {
-    spi_set_format(st7789_cfg.spi, 16, SPI_CPOL_0, SPI_CPHA_0, SPI_MSB_FIRST);
-    st7789_data_mode = true;
-}
-
-void st7789_fill_region(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2, uint16_t pixel)
-{
-    if (x1 > x2 || y1 > y2 || x1 >= st7789_width || y1 >= st7789_height) {
-        return;
-    }
-    if (x2 >= st7789_width) x2 = st7789_width - 1;
-    if (y2 >= st7789_height) y2 = st7789_height - 1;
-
     st7789_caset(x1, x2);
     st7789_raset(y1, y2);
-    st7789_ramwr();
-    st7789_set_mode_16bit();
-
-    uint16_t pixels[32];
-    for (size_t i = 0; i < sizeof(pixels) / sizeof(pixels[0]); ++i) {
-        pixels[i] = pixel;
-    }
-
-    uint32_t remaining = (uint32_t)(x2 - x1 + 1) * (uint32_t)(y2 - y1 + 1);
-    while (remaining > 0) {
-        const size_t chunk_size = remaining < (sizeof(pixels) / sizeof(pixels[0]))
-                                      ? remaining
-                                      : (sizeof(pixels) / sizeof(pixels[0]));
-        spi_write16_blocking(st7789_cfg.spi, pixels, chunk_size);
-        remaining -= chunk_size;
-    }
 }
 
-void st7789_draw_image_dma(const uint16_t *img)
+void st7789_draw_rect(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2,
+                      uint16_t color)
 {
-    // 设置窗口到整屏
-    st7789_set_cursor(0, 0);
-    st7789_ramwr();
-    st7789_set_mode_16bit();
+    uint16_t span[(LCD_WIDTH > LCD_HEIGHT) ? LCD_WIDTH : LCD_HEIGHT];
+    uint16_t index;
+    const uint16_t width = x2 - x1 + 1U;
+    const uint16_t height = y2 - y1 + 1U;
+    const uint16_t maximum = width > height ? width : height;
+    for (index = 0U; index < maximum; ++index) span[index] = color;
 
-    int total_pixels = st7789_width * st7789_height;
-
-    // 配置 DMA 源和传输长度
-    dma_channel_set_read_addr(st7789_dma_chan, img, false);
-    dma_channel_set_trans_count(st7789_dma_chan, total_pixels, false);
-    // 启动 DMA
-    dma_channel_start(st7789_dma_chan);
-
-    // 等待 DMA 完成
-    dma_channel_wait_for_finish_blocking(st7789_dma_chan);
-}
-
-void st7789_wait_for_dma_ok(void)
-{
-    dma_channel_wait_for_finish_blocking(st7789_dma_chan);
+    st7789_set_window(x1, y1, x2, y1);
+    st7789_write(span, width * sizeof(span[0]));
+    if (y2 != y1) {
+        st7789_set_window(x1, y2, x2, y2);
+        st7789_write(span, width * sizeof(span[0]));
+    }
+    st7789_set_window(x1, y1, x1, y2);
+    st7789_write(span, height * sizeof(span[0]));
+    if (x2 != x1) {
+        st7789_set_window(x2, y1, x2, y2);
+        st7789_write(span, height * sizeof(span[0]));
+    }
 }

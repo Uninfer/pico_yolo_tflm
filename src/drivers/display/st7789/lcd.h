@@ -10,9 +10,7 @@ extern "C" {
 
 void lcd_init(void);
 void lcd_show_image(uint16_t *image);
-void lcd_show_image_dma(uint16_t *image);
 void draw_boxes_to_lcd(int x1, int y1, int x2, int y2, uint16_t color);
-void lcd_wait_for_dma_ok(void);
 
 #ifdef __cplusplus
 }

@@ -1,22 +1,9 @@
-RP2350 Touch LCD YOLO
+pico_yolo_rp2350
 
-The following project-authored material is licensed under the Apache License,
-Version 2.0. A copy of that license is in LICENSE:
+Project-authored application code, inference integration, build configuration
+and documentation are licensed under Apache-2.0; see LICENSE.
 
-- `src/app/`
-- `src/inference/yolo/`
-- `boards/`
-- root `CMakeLists.txt`, README, and project documentation
-- project-specific display integration files in
-  `src/drivers/display/st7789/`, except files carrying their own upstream
-  notices
-
-Files carrying upstream license or copyright notices keep those terms. Camera
-capture files whose original source and applicable license are not recorded,
-and model/image data without recorded redistribution terms, are excluded from
-the project Apache-2.0 grant pending provenance review.
-
-This notice does not grant rights to third-party components, model weights,
-sample image data, or external hardware documentation. Their known notices and
-the files whose provenance still needs confirmation are listed in
-THIRD_PARTY_NOTICES.md.
+Imported source files retain their original copyright and license notices.
+Camera files whose provenance is not recorded, model weights and sample images
+without confirmed redistribution terms are excluded from the project grant.
+See THIRD_PARTY_NOTICES.md for component-specific terms and known exclusions.
