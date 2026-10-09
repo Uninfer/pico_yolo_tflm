@@ -12,4 +12,3 @@ if (-not $drive) {
 
 Copy-Item -LiteralPath $resolvedUf2 -Destination "${drive}:\" -Force
 Write-Host "Flashed $resolvedUf2 to ${drive}:"
-
