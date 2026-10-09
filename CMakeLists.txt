@@ -21,7 +21,7 @@ set(PICO_BOARD_HEADER_DIRS
 
 include(cmake/pico_sdk_import.cmake)
 
-project(pico_yolo_rp2350 C CXX ASM)
+project(pico_yolo_tflm C CXX ASM)
 pico_sdk_init()
 
 add_subdirectory(third_party/CMSIS/cmsis_nn)
@@ -83,14 +83,14 @@ target_link_libraries(yolo_inference PUBLIC
     cmsis_dsp
 )
 
-add_executable(pico_yolo_rp2350
+add_executable(pico_yolo_tflm
     src/app/main.c
 )
-target_include_directories(pico_yolo_rp2350 PRIVATE
+target_include_directories(pico_yolo_tflm PRIVATE
     "${PROJECT_BOARD_INCLUDE_DIR}"
     "${CMAKE_CURRENT_LIST_DIR}/src/app"
 )
-target_link_libraries(pico_yolo_rp2350 PRIVATE
+target_link_libraries(pico_yolo_tflm PRIVATE
     pico_stdlib
     pico_multicore
     camera_ov5640
@@ -102,13 +102,13 @@ target_link_libraries(pico_yolo_rp2350 PRIVATE
     hardware_timer
     hardware_vreg
 )
-target_compile_definitions(pico_yolo_rp2350 PRIVATE
+target_compile_definitions(pico_yolo_tflm PRIVATE
     PICO_YOLO_SYS_CLOCK_KHZ=${PICO_YOLO_SYS_CLOCK_KHZ}
     PICO_YOLO_FRAME_BUFFER_COUNT=1
     PICO_CORE1_STACK_SIZE=4096
     PICO_STACK_SIZE=4096
 )
 
-pico_enable_stdio_usb(pico_yolo_rp2350 1)
-pico_enable_stdio_uart(pico_yolo_rp2350 0)
-pico_add_extra_outputs(pico_yolo_rp2350)
+pico_enable_stdio_usb(pico_yolo_tflm 1)
+pico_enable_stdio_uart(pico_yolo_tflm 0)
+pico_add_extra_outputs(pico_yolo_tflm)

@@ -1,4 +1,4 @@
-pico_yolo_rp2350
+pico_yolo_tflm
 
 Project-authored application code, inference integration, build configuration
 and documentation are licensed under Apache-2.0; see LICENSE.

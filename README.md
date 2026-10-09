@@ -1,4 +1,4 @@
-# pico_yolo_rp2350
+# pico_yolo_tflm
 
 在 RP2350 上运行火焰/烟雾 YOLO 检测，使用 **标准 TensorFlow Lite Micro + CMSIS-NN**、OV5640 摄像头和 ST7789 屏幕。输入画面为 240×320 RGB565，模型输入为 192×192 RGB INT8。
 
@@ -14,7 +14,7 @@ cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
 cmake --build build --parallel
 ```
 
-也可运行 `./scripts/build.sh`。生成文件为 `build/pico_yolo_rp2350.uf2`。
+也可运行 `./scripts/build.sh`。生成文件为 `build/pico_yolo_tflm.uf2`。
 
 按住 BOOT/BOOTSEL 键连接 USB，把 UF2 复制到 RP2350 启动盘。Windows 可运行 `./scripts/flash.ps1`。启动后打开 USB 串口查看日志，串口工具可设置 115200。
 

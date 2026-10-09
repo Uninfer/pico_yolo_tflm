@@ -1,5 +1,5 @@
 param(
-    [string]$Uf2 = (Join-Path $PSScriptRoot '..\build\pico_yolo_rp2350.uf2')
+    [string]$Uf2 = (Join-Path $PSScriptRoot '..\build\pico_yolo_tflm.uf2')
 )
 
 $resolvedUf2 = (Resolve-Path -LiteralPath $Uf2).Path
