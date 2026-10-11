@@ -1,41 +1,63 @@
 # Architecture
 
-## Modules and data flow
+This project is a compact, real-time fire and smoke detection pipeline built for the Waveshare RP2350-Touch-LCD-2-C board. Camera capture, display refresh, and inference run in separate stages. With the single frame buffer, the next capture waits for display and preprocessing reads to finish; model execution can overlap subsequent capture and display.
+
+## 1. System overview
 
 | Module | Responsibility |
 | --- | --- |
-| `src/app/main.c` | Clocks, module initialization, dual-core scheduling, shared frames, and detection results |
-| `src/drivers/camera/ov5640/` | SCCB configuration, PIO sampling, DMA transfers, and frame completion state |
-| `src/drivers/display/st7789/` | Full-frame SPI transfers and detection box drawing |
-| `src/inference/pico_yolo/` | Inference interface, image conversion, engine invocation, and NMS |
-| `src/inference/models/fire/` | Fixed deployed model |
+| `src/app/main.c` | Boot flow, clock setup, dual-core scheduling, buffer ownership, and detection state |
+| `src/drivers/camera/ov5640/` | SCCB configuration, PIO capture, DMA transfers, and frame-ready signaling |
+| `src/drivers/display/st7789/` | LCD refresh, full-frame writes, and detection-box drawing |
+| `src/inference/pico_yolo/` | Image conversion, TFLM invocation, postprocessing, and NMS |
+| `src/inference/models/fire/` | Fixed deployed model weights and metadata |
 
 ```text
-OV5640 → PIO/DMA → RGB565 frame → LCD
-                       ↓
-                Resize and letterbox
-                       ↓
-       Standard TensorFlow Lite Micro + CMSIS-NN
-                       ↓
-             Restore box coordinates/NMS → LCD
+OV5640 camera -> PIO/DMA -> RGB565 frame -> LCD
+                               |
+                               v
+                         Resize + letterbox
+                               |
+                    TensorFlow Lite Micro + CMSIS-NN
+                               |
+                     Box restore + NMS -> LCD overlay
 ```
 
-Core 0 manages capture and display; Core 1 prepares model input from the latest available frame. Preprocessing releases the camera frame before model invocation. Mutexes protect frame state and detection results. The display uses the latest completed results, so detection boxes and the displayed image may come from different frames.
+### Execution model
 
-TFLM uses a single frame buffer (150 KiB), the standard allocator, native Pad/Conv operators, and ordinary Invoke calls. Actual tensor arena usage is 253092 / 253952 bytes.
+- Core 0 handles capture and display.
+- Core 1 prepares model input from the newest available frame.
+- Preprocessing releases the camera frame before the inference call begins.
+- Mutexes protect both shared frame state and detection results.
+- The display uses the latest completed detection results, which may come from an older frame than the image currently on screen. This reflects the asynchronous pipeline.
 
-## Model interface
+### Memory and runtime footprint
+
+TFLM uses a single 150 KiB frame buffer, the default allocator, native Pad/Conv operators, and ordinary `Invoke` calls. The measured tensor arena usage is 253092 / 253952 bytes.
+
+## 2. Model interface and processing contract
 
 - Classes: `0=fire`, `1=smoke`; up to 10 boxes are displayed.
-- A 240×320 frame is resized to 144×192, with 24 pixels of padding on each side. The padding RGB value is 114.
-- Model input: NHWC `1×192×192×3` RGB INT8, scale=1/255, zero_point=-128.
-- The adapter converts TFLM INT8 output to xywh coordinates in model pixel units. Postprocessing restores original image coordinates, using a confidence threshold of 0.40 and a per-class NMS IoU threshold of 0.30.
+- A 240×320 source frame is resized to 144×192 with 24 pixels of padding on each side.
+- Padding color: RGB = `(114, 114, 114)`.
+- Model input format: NHWC `1×192×192×3` RGB INT8.
+- Quantization: `scale = 1/255`, `zero_point = -128`.
+- The adapter converts TFLM INT8 outputs into `xywh` coordinates in model-pixel space.
+- Postprocessing restores coordinates back to the original image space and applies a confidence threshold of `0.40` and an IoU threshold of `0.30` for per-class NMS.
 
-When replacing the model, check input/output shapes, quantization parameters, class order, operator support, and RAM requirements. See [Third-party notices](../THIRD_PARTY_NOTICES.md) for sources and licensing.
+When replacing the model, verify the following carefully:
 
-## Recorded performance
+- Input/output tensor shapes
+- Quantization parameters
+- Class ordering
+- Operator support
+- RAM and arena requirements
 
-These are existing measurements for this project from 2026-10-10: RP2350, 300 MHz system/peripheral clocks, and an actual LCD SPI clock of 75 MHz. Logs were collected for approximately 65 seconds, excluding the first three startup windows.
+See [Third-party notices](../THIRD_PARTY_NOTICES.md) for source and licensing information.
+
+## 3. Recorded performance
+
+The measurements below were collected on 2026-10-10 using the RP2350 at 300 MHz system/peripheral clocks and a real LCD SPI clock of 75 MHz. Logs span approximately 65 seconds, excluding the first three startup windows.
 
 | Metric | Measured result |
 | --- | ---: |
@@ -45,8 +67,29 @@ These are existing measurements for this project from 2026-10-10: RP2350, 300 MH
 | Model execution | 138.76 ms |
 | Capture request to display of new results | 220.60 ms |
 
-Serial `INFER` logs record preprocessing, model, and postprocessing times; `PIPE` logs record frame and new-result throughput; `VIDEO` logs record image state, gain, and exposure.
+### Log semantics
 
-To repeat the measurements, flash this project's firmware, keep camera position and lighting stable, and record the commit, model, board, and runtime clocks. Collect at least 60 seconds of serial logs and exclude the first three startup windows. Calculate throughput as total counts divided by total reporting time, and weight average timings by the sample count in each window. Performance records should use only firmware and logs from this repository.
+- `INFER` logs: preprocessing, model runtime, and postprocessing timing
+- `PIPE` logs: frame and new-result throughput
+- `VIDEO` logs: image state, gain, and exposure
 
-Display updates measure how often the software writes a complete frame. Pipeline latency starts at the capture request and excludes exposure start and panel scanning. Lighting, target count, and clocks affect the results. The model has no reproducible standalone accuracy evaluation; example detection results require validation in the intended environment.
+### Reproduction guidance
+
+To reproduce or compare measurements:
+
+1. Flash the repository firmware.
+2. Keep the camera position and lighting stable.
+3. Record the commit, model, board, and runtime clocks.
+4. Collect at least 60 seconds of serial logs.
+5. Exclude the first three startup windows.
+6. Compute throughput as total counts divided by total reporting time.
+7. Weight average timing results by the sample count in each window.
+
+Performance records should use only firmware and logs originating from this repository.
+
+### Interpretation notes
+
+- Display updates measure how often the software writes a complete frame.
+- Pipeline latency starts at the capture request and excludes exposure start and panel scanning.
+- Lighting, target count, and clock settings all affect results.
+- The model does not have a reproducible standalone accuracy benchmark; real-world validation remains necessary in the target environment.
