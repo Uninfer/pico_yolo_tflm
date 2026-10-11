@@ -30,8 +30,8 @@ int pico_yolo_infer(const uint16_t *rgb565,
                     pico_yolo_box_t *boxes,
                     uint32_t *box_count);
 
-/* 输入准备完成后释放相机帧；模型使用自己的输入张量。
- * wait 接口用于需要等待显示读完的适配层，当前标准 TFLM 不需要调用。 */
+/* Release the camera frame after input preparation; the model uses its own input tensor.
+ * The wait interface is for adapters that must wait for display reads; standard TFLM does not need it. */
 void pico_yolo_wait_for_display(void);
 void pico_yolo_release_frame(void);
 #ifdef __cplusplus

@@ -50,8 +50,8 @@ static void camera_configure_anti_banding(void)
     if (step60 < 1U) step60 = 1U;
     if (step60 > 1023U) step60 = 1023U;
 
-    /* 夜间曝光最多延长到约两个基础帧周期。
-       保持行时钟不变，所以防频闪步长不变，只增加允许的曝光步数。 */
+    /* Night-mode exposure can extend to approximately two base frame periods.
+       Keep the line clock and anti-banding step unchanged; increase only the permitted exposure step count. */
     const uint32_t max_exposure_lines = 2U * vts - 4U;
     uint32_t max50 = max_exposure_lines / step50;
     uint32_t max60 = max_exposure_lines / step60;
@@ -71,7 +71,7 @@ static void camera_configure_anti_banding(void)
     OV5640_WR_Reg(i2c1, address, 0x3c01, 0xa4);
     OV5640_WR_Reg(i2c1, address, 0x3c00, 0x04);
 
-    /* 先设置防频闪，再允许暗光延长曝光；上限取防频闪步长的整数倍。 */
+    /* Configure anti-banding before enabling longer low-light exposure; use an integer multiple of the step as the limit. */
     const uint32_t exposure50 = max50 * step50;
     const uint32_t exposure60 = max60 * step60;
     OV5640_WR_Reg(i2c1, address, 0x3a02, (uint8_t)(exposure60 >> 8U));

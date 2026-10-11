@@ -1,23 +1,23 @@
 name: Bug report
-description: 报告构建、摄像头、显示或推理问题
+description: Report build, camera, display, or inference issues
 body:
   - type: textarea
     id: environment
     attributes:
-      label: 运行环境
-      description: 提交版本、操作系统、编译器/Pico SDK 版本、板卡与模组、时钟及接线。
+      label: Environment
+      description: Commit, operating system, compiler/Pico SDK versions, board and modules, clocks, and wiring.
     validations:
       required: true
   - type: textarea
     id: reproduce
     attributes:
-      label: 复现步骤
-      description: 列出最小复现步骤，以及预期结果与实际结果。
+      label: Steps to reproduce
+      description: List minimal reproduction steps, expected behavior, and actual behavior.
     validations:
       required: true
   - type: textarea
     id: logs
     attributes:
-      label: 构建或串口日志
-      description: 包含初始化信息及 VIDEO/INFER 日志，移除个人信息和凭据。
+      label: Build or serial logs
+      description: Include initialization messages and VIDEO/INFER logs. Remove personal information and credentials.
       render: text

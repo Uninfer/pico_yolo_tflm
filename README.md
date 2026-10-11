@@ -1,12 +1,12 @@
 # pico_yolo_tflm
 
-在 RP2350 上运行火焰/烟雾 YOLO 检测，使用 **标准 TensorFlow Lite Micro + CMSIS-NN**、OV5640 摄像头和 ST7789 屏幕。输入画面为 240×320 RGB565，模型输入为 192×192 RGB INT8。
+Fire and smoke detection on RP2350 using YOLO, **standard TensorFlow Lite Micro + CMSIS-NN**, an OV5640 camera, and an ST7789 display. Camera frames are 240×320 RGB565; model input is 192×192 RGB INT8.
 
-固定适配 Waveshare RP2350-Touch-LCD-2-C 摄像头套装。 双核运行：Core 0 采集与显示，Core 1 推理。当前采用单帧 RGB565 缓冲，标准 TFLM 张量工作区预留 248 KiB。
+The firmware targets the Waveshare RP2350-Touch-LCD-2-C camera kit. Core 0 handles capture and display; Core 1 runs inference. It uses a single RGB565 frame buffer and reserves 248 KiB for the standard TFLM tensor arena.
 
-## 编译与烧录
+## Build and flash
 
-需要 Pico SDK **2.1.1**（含子模块）、Arm GNU Toolchain、CMake **3.20+** 和 Ninja。设置 SDK 路径并确保 `arm-none-eabi-gcc` 在 PATH 中：
+Requirements: Pico SDK **2.1.1** (including submodules), Arm GNU Toolchain, CMake **3.20+**, and Ninja. Set the SDK path and ensure `arm-none-eabi-gcc` is on PATH:
 
 ```sh
 export PICO_SDK_PATH=/path/to/pico-sdk
@@ -14,32 +14,32 @@ cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
 cmake --build build --parallel
 ```
 
-也可运行 `./scripts/build.sh`。生成文件为 `build/pico_yolo_tflm.uf2`。
+Alternatively, run `./scripts/build.sh`. The output is `build/pico_yolo_tflm.uf2`.
 
-按住 BOOT/BOOTSEL 键连接 USB，把 UF2 复制到 RP2350 启动盘。Windows 可运行 `./scripts/flash.ps1`。启动后打开 USB 串口查看日志，串口工具可设置 115200。
+Hold BOOT/BOOTSEL while connecting USB, then copy the UF2 file to the RP2350 boot drive. On Windows, you can run `./scripts/flash.ps1`. After startup, open the USB serial port to view logs; configure your serial terminal for 115200 baud.
 
-默认系统/外设时钟为 **300 MHz**，属于超频；改用 150 MHz 时，在配置命令中加入 `-DPICO_YOLO_SYS_CLOCK_KHZ=150000`。以下性能只对应 300 MHz 配置。
+The default system and peripheral clocks are **300 MHz**, which is an overclock. To use 150 MHz, add `-DPICO_YOLO_SYS_CLOCK_KHZ=150000` to the configuration command. The documented performance figures apply only to the 300 MHz configuration.
 
-## 目录与说明
+## Project layout and documentation
 
 ```text
 src/
-  app/                       应用入口与双核调度
-  drivers/camera/ov5640/      摄像头、PIO 与 DMA
-  drivers/display/st7789/    屏幕驱动
-  inference/pico_yolo/       引擎适配、预处理与后处理
-  inference/models/fire/     部署模型
-boards/                      板级引脚与 Pico SDK 板型
-third_party/                 引擎/Arm 依赖及其许可证
-cmake/                       Pico SDK 导入
-scripts/                     编译与烧录
+  app/                       Application entry point and dual-core scheduling
+  drivers/camera/ov5640/      Camera, PIO, and DMA
+  drivers/display/st7789/    Display driver
+  inference/pico_yolo/       Engine integration, preprocessing, and postprocessing
+  inference/models/fire/     Deployed model
+boards/                      Board pins and Pico SDK board definitions
+third_party/                 Inference and Arm dependencies with their licenses
+cmake/                       Pico SDK import
+scripts/                     Build and flash helpers
 ```
 
-- [架构说明](docs/architecture.md)：模块职责、帧流程、模型接口与当前性能。
-- [硬件说明](docs/hardware.md)：引脚、相机参数和常见故障。
-- [贡献指南](CONTRIBUTING.md)：提交 Issue/PR 和验证方式。
-- [第三方声明](THIRD_PARTY_NOTICES.md)：依赖来源与模型授权边界。
+- [Architecture](docs/architecture.md): module responsibilities, frame flow, model interface, and current performance.
+- [Hardware](docs/hardware.md): pins, camera settings, and troubleshooting.
+- [Contributing](CONTRIBUTING.md): issues, pull requests, and validation.
+- [Third-party notices](THIRD_PARTY_NOTICES.md): dependency sources and model licensing boundaries.
 
-## 开源许可
+## License
 
-项目自有代码与文档采用 [Apache-2.0](LICENSE)，适用范围见 [NOTICE](NOTICE)。第三方文件保留原许可；模型权重及示例图像的授权状态单独记录在 [第三方声明](THIRD_PARTY_NOTICES.md)。
+Project-authored code and documentation are licensed under [Apache-2.0](LICENSE); see [NOTICE](NOTICE) for scope. Third-party files retain their original licenses. The licensing status of model weights and sample images is recorded separately in [Third-party notices](THIRD_PARTY_NOTICES.md).

@@ -1,12 +1,12 @@
-# 贡献指南
+# Contributing
 
-欢迎提交 Issue 或 Pull Request。先阅读 [README](README.md) 和 [架构说明](docs/architecture.md)。
+Issues and pull requests are welcome. Read the [README](README.md) and [Architecture](docs/architecture.md) first.
 
-- Issue 请包含提交版本、板卡/接线、SDK/编译器版本、复现步骤和必要日志。
-- PR 说明解决的问题、修改后的行为及编译结果；有板子时补充运行结果。没有上板验证请明确说明。
-- 提交前执行 README 中的 Release 编译，并用 `git diff --check` 检查格式。性能改动请记录本项目修改前后的实测数据，保持光照、时钟和模型一致；无需测试其他仓库。
-- 使用普通 C/C++ 函数和清晰的循环，保持应用、驱动、推理之间的职责。避免为了抽象增加模板、复杂宏或额外框架。
-- 修改第三方源码时保留原版权/许可声明并记录差异；新增依赖、模型或素材时补充来源和许可证。
-- 原创贡献按 Apache-2.0 提交；第三方代码按其原许可处理。
+- Issues should include the commit, board and wiring, SDK and compiler versions, reproduction steps, and relevant logs.
+- Pull requests should explain the problem, the resulting behavior, and build results. Include hardware results when a board is available; state explicitly when hardware testing was not performed.
+- Before submitting, run the Release build described in the README and `git diff --check`. For performance changes, record measurements before and after the change in this project, using the same lighting, clocks, and model. Testing other repositories is not required.
+- Use straightforward C/C++ functions and clear loops. Keep application, driver, and inference responsibilities separate. Avoid unnecessary templates, complex macros, or additional frameworks.
+- Preserve original copyright and license notices when modifying third-party sources, and document the changes. Record sources and licenses for new dependencies, models, or assets.
+- Original contributions are submitted under Apache-2.0. Third-party code remains subject to its original license.
 
-本仓库只保留固件和编译/烧录入口，不包含独立测试目录。请在 PR 中记录实际执行的验证步骤。
+This repository contains firmware and build/flash entry points, with no standalone test directory. Record the validation steps actually performed in your pull request.

@@ -1,12 +1,12 @@
-## 修改内容
+## Changes
 
-说明解决的问题、修改后的行为以及相关硬件或模型。
+Describe the problem, the resulting behavior, and the relevant hardware or model.
 
-## 验证结果
+## Validation
 
-填写 Release 编译命令和结果；有板子时记录运行情况，没有上板请说明。
-性能相关修改请附本仓库修改前后的实测数据，并记录配置；无需测试其他仓库。
+Include the Release build command and result. Record hardware results if tested; otherwise state that hardware testing was not performed.
+For performance changes, include measurements before and after the change in this repository and record the configuration. Testing other repositories is not required.
 
-## 来源与许可
+## Sources and licenses
 
-新增依赖、模型或素材时填写来源与许可；没有新增则填“不适用”。
+Record sources and licenses for new dependencies, models, or assets. If none were added, enter "Not applicable".

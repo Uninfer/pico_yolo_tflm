@@ -22,7 +22,7 @@ _Static_assert(CONFIG_LCD_WIDTH == LCD_WIDTH &&
                "LCD dimensions must agree across the driver");
 
 /**
- * @brief   lcd  初始化
+ * @brief   Initialize the LCD
  *
  */
 void lcd_init(void)
@@ -39,9 +39,9 @@ void lcd_init(void)
 }
 
 /**
- * @brief   显示一张完成的图像
+ * @brief   Display a complete image
  *
- * @param   image           uint16_t 类型的数组
+ * @param   image           Array of uint16_t pixels
  */
 void lcd_show_image(uint16_t *image)
 {
@@ -53,7 +53,7 @@ void lcd_show_image(uint16_t *image)
 #define FRAME_HEIGHT CONFIG_LCD_HEIGHT
 void draw_boxes_to_lcd(int x1, int y1, int x2, int y2, uint16_t color)
 {
-    /* 限制范围 */
+    /* Clamp coordinates to the valid range. */
     if (x1 < 0) {
         x1 = 0;
     }

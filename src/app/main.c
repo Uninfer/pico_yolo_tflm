@@ -17,7 +17,7 @@
 #define PICO_YOLO_FRAME_BUFFER_COUNT 2U
 #endif
 #define FRAME_BUFFER_COUNT PICO_YOLO_FRAME_BUFFER_COUNT
-/* 超出有效帧索引的值表示当前没有使用帧。 */
+/* A value outside the valid frame indices indicates that no frame is currently in use. */
 #define NO_FRAME FRAME_BUFFER_COUNT
 #define FRAME_PIXELS (PICO_YOLO_FRAME_WIDTH * PICO_YOLO_FRAME_HEIGHT)
 
@@ -109,8 +109,8 @@ static void draw_detections(void)
     }
 }
 
-/* Core 1：取最新帧 -> 预处理 -> 推理 -> 发布检测框。
- * 帧锁保护谁正在读哪个缓冲区；框锁保护检测结果。 */
+/* Core 1: get the latest frame -> preprocess -> infer -> publish detection boxes.
+ * The frame lock protects buffer reader ownership; the box lock protects detection results. */
 static void core1_entry(void)
 {
     pico_yolo_box_t boxes[PICO_YOLO_MAX_BOXES];
@@ -262,7 +262,7 @@ int main(void)
         }
         capture_total_us += time_us_64() - capture_started;
 
-        /* 等推理释放即将复用的缓冲区，再交换采集帧与显示帧。 */
+        /* Wait for inference to release the buffer to be reused, then swap capture and display frames. */
         while (true) {
             uint32_t reader;
             mutex_enter_blocking(&g_frame_lock);
@@ -285,11 +285,11 @@ int main(void)
 
 #if PICO_YOLO_FRAME_BUFFER_COUNT == 2
         capture_started = time_us_64();
-        /* 双帧：采集与显示使用不同缓冲区，可以同时进行。 */
+        /* Two buffers: capture and display use separate buffers and can run concurrently. */
         camera_pipeline_capture_to(g_frame_storage[capture_index]);
 #endif
         const uint64_t lcd_started = time_us_64();
-        /* 阻塞式显示返回后，屏幕才不再读取这块内存。 */
+        /* The display stops reading this memory only after the blocking display call returns. */
         lcd_show_image(g_frame_storage[display_index]);
         lcd_total_us += time_us_64() - lcd_started;
         draw_detections();
@@ -340,17 +340,17 @@ int main(void)
             fresh_count = 0U;
             report_started = time_us_64();
         }
-        /* 诊断也会读取图像，所以最后才允许推理覆盖这帧。 */
+        /* Diagnostics also read the image, so allow inference to overwrite this frame only afterward. */
         mutex_enter_blocking(&g_frame_lock);
         g_display_reader_index = NO_FRAME;
         mutex_exit(&g_frame_lock);
 #if PICO_YOLO_FRAME_BUFFER_COUNT == 1
-        /* 单帧：屏幕和预处理都读完后，才能启动下一次采集。 */
+        /* Single buffer: start the next capture only after display and preprocessing reads finish. */
         while (true) {
             mutex_enter_blocking(&g_frame_lock);
             const bool released = g_inference_reader_index == NO_FRAME;
             if (released) {
-                /* DMA 期间不允许推理重新取得这块正在写入的帧。 */
+                /* During DMA, prevent inference from reacquiring the frame being written. */
                 g_frame_available = false;
             }
             mutex_exit(&g_frame_lock);

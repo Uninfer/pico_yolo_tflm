@@ -23,7 +23,7 @@ int pico_yolo_init(void)
         printf("Unsupported TFLM model schema\n");
         return -1;
     }
-    // 注册需要的算子
+    // Register the required operators.
     static tflite::MicroMutableOpResolver<17> resolver;
     resolver.AddMaxPool2D();
     resolver.AddConv2D();
@@ -43,7 +43,7 @@ int pico_yolo_init(void)
     resolver.AddSub();
     resolver.AddStridedSlice();
 
-    // 与原版本相同：标准分配器管理完整输入、Pad 和卷积张量。
+    // As in the original version, the standard allocator manages the full input, Pad, and convolution tensors.
     static tflite::MicroInterpreter instance(model, resolver, tensor_arena, kTensorArenaSize);
     interpreter = &instance;
     if (interpreter->AllocateTensors() != kTfLiteOk) {
@@ -74,12 +74,12 @@ int pico_yolo_preprocess_frame(const uint16_t *rgb565, uint32_t *elapsed_us)
         return -1;
     }
     const uint64_t started = time_us_64();
-    // 预处理写入 TFLM 自己的输入张量，不覆盖相机帧。
+    // Preprocessing writes to TFLM's own input tensor without overwriting the camera frame.
     preprocess_rgb565(rgb565, input->data.int8);
     if (elapsed_us != nullptr) {
         *elapsed_us = static_cast<uint32_t>(time_us_64() - started);
     }
-    // 输入复制完成，采集端可在屏幕读完后复用相机缓冲区。
+    // Input copying is complete; capture can reuse the camera buffer after the display finishes reading it.
     pico_yolo_release_frame();
     return 0;
 }

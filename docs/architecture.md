@@ -1,52 +1,52 @@
-# 架构说明
+# Architecture
 
-## 模块与数据流
+## Modules and data flow
 
-| 模块 | 职责 |
+| Module | Responsibility |
 | --- | --- |
-| `src/app/main.c` | 时钟、模块初始化、双核调度、共享帧和检测结果 |
-| `src/drivers/camera/ov5640/` | SCCB 配置、PIO 采样、DMA 写入和帧完成状态 |
-| `src/drivers/display/st7789/` | SPI 整帧传输和检测框绘制 |
-| `src/inference/pico_yolo/` | 推理接口、图像转换、引擎调用和 NMS |
-| `src/inference/models/fire/` | 固定的部署模型 |
+| `src/app/main.c` | Clocks, module initialization, dual-core scheduling, shared frames, and detection results |
+| `src/drivers/camera/ov5640/` | SCCB configuration, PIO sampling, DMA transfers, and frame completion state |
+| `src/drivers/display/st7789/` | Full-frame SPI transfers and detection box drawing |
+| `src/inference/pico_yolo/` | Inference interface, image conversion, engine invocation, and NMS |
+| `src/inference/models/fire/` | Fixed deployed model |
 
 ```text
-OV5640 → PIO/DMA → RGB565 帧 → LCD
+OV5640 → PIO/DMA → RGB565 frame → LCD
                        ↓
-                 等比例缩放与补边
+                Resize and letterbox
                        ↓
-                   标准 TensorFlow Lite Micro + CMSIS-NN
+       Standard TensorFlow Lite Micro + CMSIS-NN
                        ↓
-                 检测框坐标恢复/NMS → LCD
+             Restore box coordinates/NMS → LCD
 ```
 
-Core 0 管理采集与显示；Core 1 从最新可用帧准备模型输入。预处理结束后释放相机帧，再执行模型。互斥锁保护帧状态和检测结果。显示使用最新已完成的结果，检测框与显示画面可能来自不同帧。
+Core 0 manages capture and display; Core 1 prepares model input from the latest available frame. Preprocessing releases the camera frame before model invocation. Mutexes protect frame state and detection results. The display uses the latest completed results, so detection boxes and the displayed image may come from different frames.
 
-TFLM 使用单帧缓冲（150 KiB），模型使用标准分配器、原生 Pad/Conv 和普通 Invoke；张量工作区实际占用 253092 / 253952 字节。
+TFLM uses a single frame buffer (150 KiB), the standard allocator, native Pad/Conv operators, and ordinary Invoke calls. Actual tensor arena usage is 253092 / 253952 bytes.
 
-## 模型接口
+## Model interface
 
-- 类别：`0=fire`、`1=smoke`；最多显示 10 个框。
-- 240×320 画面缩放为 144×192，左右各补 24 像素；补边 RGB 为 114。
-- 模型输入：NHWC `1×192×192×3` RGB INT8，scale=1/255、zero_point=-128。
-- TFLM 的 INT8 输出在适配层转换为模型像素尺度的 xywh。 后处理恢复原图坐标，使用 0.40 置信度阈值和 0.30 分类别 NMS IoU 阈值。
+- Classes: `0=fire`, `1=smoke`; up to 10 boxes are displayed.
+- A 240×320 frame is resized to 144×192, with 24 pixels of padding on each side. The padding RGB value is 114.
+- Model input: NHWC `1×192×192×3` RGB INT8, scale=1/255, zero_point=-128.
+- The adapter converts TFLM INT8 output to xywh coordinates in model pixel units. Postprocessing restores original image coordinates, using a confidence threshold of 0.40 and a per-class NMS IoU threshold of 0.30.
 
-更换模型时同时核对输入输出形状、量化参数、类别顺序、算子支持和 RAM。来源及许可见 [第三方声明](../THIRD_PARTY_NOTICES.md)。
+When replacing the model, check input/output shapes, quantization parameters, class order, operator support, and RAM requirements. See [Third-party notices](../THIRD_PARTY_NOTICES.md) for sources and licensing.
 
-## 当前实测
+## Recorded performance
 
-以下为本项目在 2026-10-10 的已有板端测量记录：RP2350、系统/外设 300 MHz、LCD SPI 实际 75 MHz。采集约 65 秒，排除前三个启动窗口。
+These are existing measurements for this project from 2026-10-10: RP2350, 300 MHz system/peripheral clocks, and an actual LCD SPI clock of 75 MHz. Logs were collected for approximately 65 seconds, excluding the first three startup windows.
 
-| 指标 | 本项目实测 |
+| Metric | Measured result |
 | --- | ---: |
-| 推理吞吐 | 6.55 FPS |
-| 屏幕画面更新 | 14.79 FPS |
-| 新结果首次显示 | 6.58 FPS |
-| 模型执行 | 138.76 ms |
-| 采集请求到新结果显示 | 220.60 ms |
+| Inference throughput | 6.55 FPS |
+| Display frame updates | 14.79 FPS |
+| First display of new results | 6.58 FPS |
+| Model execution | 138.76 ms |
+| Capture request to display of new results | 220.60 ms |
 
-串口 `INFER` 记录预处理/模型/后处理耗时，`PIPE` 记录画面和新结果吞吐，`VIDEO` 记录图像状态及增益/曝光。
+Serial `INFER` logs record preprocessing, model, and postprocessing times; `PIPE` logs record frame and new-result throughput; `VIDEO` logs record image state, gain, and exposure.
 
-复测时烧录本项目固件，保持相机位置和光照稳定，记录提交版本、模型、板卡及运行时钟。采集至少 60 秒串口日志，排除前三个启动窗口；吞吐按累计次数除以累计统计时长计算，平均耗时按各窗口样本数加权。性能记录只使用本仓库的固件与日志。
+To repeat the measurements, flash this project's firmware, keep camera position and lighting stable, and record the commit, model, board, and runtime clocks. Collect at least 60 seconds of serial logs and exclude the first three startup windows. Calculate throughput as total counts divided by total reporting time, and weight average timings by the sample count in each window. Performance records should use only firmware and logs from this repository.
 
-画面更新是软件写入整帧的频率；链路延迟从采集请求开始，不包括曝光起点和面板扫描。光照、目标数量和时钟都会影响结果。模型没有可复现的独立精度评测，示例检测效果需要在实际场景验证。
+Display updates measure how often the software writes a complete frame. Pipeline latency starts at the capture request and excludes exposure start and panel scanning. Lighting, target count, and clocks affect the results. The model has no reproducible standalone accuracy evaluation; example detection results require validation in the intended environment.

@@ -83,7 +83,7 @@ const uint16_t sensor_default_regs[][2] = {
     {0x3a13, 0x43},
     {0x3a14, 0x03},
     {0x3a15, 0xd8},
-    /* 限制自动增益为 6 倍；暗光优先延长曝光，减少噪声放大。 */
+    /* Limit automatic gain to 6x; prefer longer exposure in low light to reduce noise amplification. */
     {0x3a18, 0x00},
     {0x3a19, 0x60},
     {0x3a1b, 0x30},//ae_level
@@ -157,8 +157,8 @@ const uint16_t sensor_default_regs[][2] = {
     {0x538a, 0x01},
     {0x538b, 0x98},
 
-    /* 0x5308[4] 启用手动降噪，0x5306=16 对应 Espressif 的 5/8 档。
-       适度降低手动锐化，避免把暗处颗粒作为边缘放大。 */
+    /* 0x5308[4] enables manual denoising; 0x5306=16 matches Espressif level 5/8.
+       Moderately reduce manual sharpening to avoid amplifying low-light noise as edges. */
     {0x5300, 0x08},
     {0x5301, 0x30},
     {0x5302, 0x08},
@@ -276,7 +276,7 @@ void ov5640_sensor_init(const uint32_t sda_pin, const uint32_t scl_pin)
     OV5640_WR_Reg(i2c,CAM_ADDR,SC_PLL_CONTRL_5, 0x00);
     OV5640_WR_Reg(i2c,CAM_ADDR,SC_PLL_CONTRL_0, 0x1A);
     OV5640_WR_Reg(i2c,CAM_ADDR,SC_PLL_CONTRL_1, 0x11);
-    /* 加快相机输出时钟，保持图像尺寸、裁剪和颜色格式不变。 */
+    /* Increase the camera output clock without changing image dimensions, cropping, or color format. */
     OV5640_WR_Reg(i2c,CAM_ADDR,SC_PLL_CONTRL_2, 22);
     OV5640_WR_Reg(i2c,CAM_ADDR,SC_PLL_CONTRL_3, 0x01);
     OV5640_WR_Reg(i2c,CAM_ADDR,SYSTEM_ROOT_DIVIDER, 0x16);

@@ -5,7 +5,7 @@
 #include "pico/time.h"
 #include <string.h>
 #include "pico_yolo_inference.h"
-/* 输入图像和输出张量分开存放，告诉编译器两者不重叠。 */
+/* The input image and output tensor are stored separately; tell the compiler they do not overlap. */
 #define PICO_YOLO_RESTRICT __restrict
 #ifdef __cplusplus
 #define PICO_YOLO_STATIC_ASSERT static_assert
@@ -51,8 +51,8 @@ static inline void store_rgb565(uint16_t pixel, int8_t *destination)
 static void __not_in_flash_func(preprocess_row)(const uint16_t *PICO_YOLO_RESTRICT source,
                                                 int8_t *PICO_YOLO_RESTRICT destination)
 {
-    /* RGB565 转 int8：RGB 各减 128；补边像素 114 对应 -14。
-     * 每 5 个源像素取第 0、1、3 个，得到 3 个目标像素。 */
+    /* Convert RGB565 to int8: subtract 128 from each RGB channel; padding value 114 maps to -14.
+     * Select source pixels 0, 1, and 3 from each group of 5 to produce 3 destination pixels. */
     uint32_t group;
     memset(destination, (int)(int8_t)-14, PAD_LEFT * 3U);
     destination += PAD_LEFT * 3U;
@@ -112,7 +112,7 @@ static float intersection_over_union(const pico_yolo_box_t *left, const pico_yol
 static void insert_candidate(pico_yolo_box_t *items, uint32_t *count,
                              const pico_yolo_box_t *candidate)
 {
-    /* 按置信度从高到低插入，满 64 个时丢弃最低的候选框。 */
+    /* Insert in descending confidence order; discard the lowest candidate when all 64 slots are full. */
     uint32_t position = *count;
     if (position == MAX_CANDIDATES) {
         if (candidate->confidence <= items[position - 1U].confidence) {
@@ -139,7 +139,7 @@ static uint32_t pico_yolo_postprocess_float(const float *values, pico_yolo_box_t
     uint32_t detection_count = 0U;
     uint32_t anchor;
 
-    /* 第一步：筛掉低分框，并把模型坐标还原到摄像头坐标。 */
+    /* Step 1: filter low-score boxes and restore model coordinates to camera coordinates. */
     for (anchor = 0U; anchor < OUTPUT_ANCHORS; ++anchor) {
         const float center_x = values[anchor];
         const float center_y = values[OUTPUT_ANCHORS + anchor];
@@ -173,7 +173,7 @@ static uint32_t pico_yolo_postprocess_float(const float *values, pico_yolo_box_t
         }
     }
 
-    /* 第二步：按分数选框，同一类别的重叠框只保留高分框（NMS）。 */
+    /* Step 2: select boxes by score; retain only higher-score overlapping boxes of the same class (NMS). */
     for (anchor = 0U; anchor < candidate_count && detection_count < capacity; ++anchor) {
         uint32_t kept;
         int suppressed = 0;
